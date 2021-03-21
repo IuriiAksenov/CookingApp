@@ -1,0 +1,15 @@
+[Unit]
+Description=Api Service Version 0.1 on Ubuntu
+
+[Service]
+ReadWriteDirectories=/var/www/cooking_app/back/v0.1
+WorkingDirectory=/var/www/cooking_app/back/v0.1
+ExecStart=/usr/bin/dotnet /var/www/cooking_app/back/v0.1/services/Api/Api.dll
+Restart=always
+RestartSec=10
+SyslogIdentifier=cooking_app_api_v0.1_service
+User=www-data
+Environment=ASPNETCORE_ENVIRONMENT=Staging
+
+[Install]
+WantedBy=multi-user.target

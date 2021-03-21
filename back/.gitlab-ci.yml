@@ -1,0 +1,53 @@
+stages:
+  - build
+#   - test
+  - deploy
+
+before_script:
+  - mkdir release
+
+build_Api:
+  image: mcr.microsoft.com/dotnet/core/sdk:3.1
+  stage: build
+  artifacts:
+    paths:
+      - release
+  only:
+    changes:
+      - services/**/*
+  script:
+    - dotnet publish services/src/Api --framework netcoreapp3.1 --output release/Api --runtime ubuntu.16.04-x64
+
+###### TEST ######
+# test:
+#   image: mcr.microsoft.com/dotnet/core/sdk:3.1
+#   stage: test
+#   dependencies: []
+#   before_script:
+#     - ''
+#   script:
+#     - dotnet test
+
+
+###### DEPLOY ######
+deploy_pre_prod:
+  image: instrumentisto/rsync-ssh
+  stage: deploy
+  before_script:
+    - ''
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - changes:
+      - /^server*/**/*
+  script:
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
+    - chmod 600 ~/.ssh/id_ed25519
+    - echo "$SSH_KNOWN_HOSTS" | tr -d '\r' > ~/.ssh/known_hosts
+    - chmod 600 ~/.ssh/known_hosts
+
+    - rsync -ravqp release/ ocs_cicd@109.248.250.102:/var/www/cooking_app/back/v0.1/services
+
+    - ssh ocs_cicd@109.248.250.102 'sudo /home/ocs_cicd/restart_kestrel_services_cooking_app_v0.1.bash'
